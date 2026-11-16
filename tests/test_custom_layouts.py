@@ -56,6 +56,25 @@ def test_custom_layout_file_overrides_matching_wire_layout(tmp_path):
     assert layouts["T060104"].decode(synthetic(), include_all=True).values["extra"] == 456
 
 
+@pytest.mark.parametrize("kind", ["num", "numx"])
+@pytest.mark.parametrize("present", [0, 1, 2, 3, 4])
+def test_custom_numeric_fields_require_all_bytes(kind, present):
+    layout = CustomLayout(
+        "T060104",
+        {"pvenergytotal": {"value": 156, "length": 4, "type": kind, "divide": 10}},
+    )
+    source = synthetic()
+    payload = bytearray(source.payload)
+    payload[70:74] = (10000).to_bytes(4, "big")
+    decoded = layout.decode(Frame(1, 6, 1, 4, bytes(payload[: 70 + present])))
+    if present < 4:
+        assert "pvenergytotal" not in decoded.values
+        assert decoded.decode_errors == 1
+    else:
+        assert decoded.values["pvenergytotal"] == 10000
+        assert decoded.decode_errors == 0
+
+
 def test_per_device_family_setting_selects_custom_family():
     layouts = {"T06NNNNMAX": CustomLayout("T06NNNNMAX", description())}
     decoder = FamilyDecoder(

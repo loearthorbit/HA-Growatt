@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from ha_growatt.compat import CompatibilityDecoder
+from ha_growatt.energy_guard import ENERGY_JUMP_LIMIT_KWH
 from ha_growatt.health import clear_health, healthy, write_health
 from ha_growatt.pipeline import Pipeline
 from ha_growatt.protocol import Frame, ProtocolError
@@ -70,6 +71,88 @@ def test_serial_relative_record_matches_measured_positions(offset, protocol, dec
         CompatibilityDecoder("INVERT0001", offset, decrypt).decode(
             replace(frame, payload=frame.payload[:50])
         )
+
+
+def test_pipeline_seeds_the_guard_from_restored_mqtt_readings():
+    from datetime import UTC, datetime
+
+    from ha_growatt.recovery import Snapshot
+    from ha_growatt.telemetry import Telemetry
+
+    telemetry = Telemetry({"pvserial": "INVERT0001", "pvenergytotal": 500}, None, "classic-6")
+
+    class RestoredPublisher:
+        def __init__(self, settings):
+            self.snapshots = {"INVERT0001": Snapshot(telemetry, datetime.now(UTC))}
+
+    pipeline = Pipeline(
+        Settings(RelaySettings("unused.invalid"), MqttSettings("unused.invalid"), "classic-6"),
+        ha_publisher=RestoredPublisher,
+    )
+    assert not pipeline.energy_guard.accept(
+        replace(
+            telemetry,
+            values=telemetry.values | {"pvenergytotal": 500 + ENERGY_JUMP_LIMIT_KWH * 10 + 1},
+        )
+    )
+    assert pipeline.energy_guard.accept(telemetry)
+
+
+def test_energy_jump_is_discarded_before_features_and_all_output_queues():
+    async def scenario():
+        settings = Settings(
+            RelaySettings("unused.invalid"),
+            MqttSettings("unused.invalid"),
+            "classic-6",
+            runtime=RuntimeOptions(home_assistant=False),
+        )
+        pipeline = Pipeline(settings)
+        delivered, remembered = [], []
+
+        async def output(reading):
+            delivered.append(reading)
+
+        class Features:
+            def start(self):
+                pass
+
+            def remember(self, telemetry):
+                remembered.append(telemetry)
+
+            async def close(self):
+                pass
+
+        pipeline.features = Features()
+        pipeline._outputs = {"first": output, "second": output}
+        case = next(
+            item
+            for item in json.loads(
+                (Path(__file__).parent / "fixtures/telemetry_cases.json").read_text()
+            )
+            if item["profile"] == "classic-6"
+        )
+        source = Frame.from_bytes(bytes.fromhex(case["wire"]))
+        from ha_growatt.profiles import wire_profiles
+
+        offset, size, _signed = wire_profiles()["classic-6"]["numeric_fields"]["pvenergytotal"]
+        payload = bytearray(source.payload)
+        payload[offset : offset + size] = (
+            case["expected"]["pvenergytotal"] + ENERGY_JUMP_LIMIT_KWH * 10 + 1
+        ).to_bytes(size, "big")
+        bad = replace(source, payload=bytes(payload))
+        pipeline.start()
+        try:
+            await pipeline.observe("device", source)
+            await pipeline.observe("device", bad)
+            await pipeline.observe("device", source)
+            await asyncio.gather(*(queue.join() for queue in pipeline._queues.values()))
+            assert len(delivered) == 4
+            assert len(remembered) == 2
+            assert pipeline.energy_guard.rejected == 1
+        finally:
+            await pipeline.close()
+
+    asyncio.run(scenario())
 
 
 def test_slow_and_failing_outputs_do_not_block_other_outputs():

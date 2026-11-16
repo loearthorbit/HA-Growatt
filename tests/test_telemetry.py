@@ -40,6 +40,27 @@ def test_unsafe_identity_is_not_an_mqtt_topic():
         Decoder(CASES[0]["profile"]).decode(Frame(1, 6, 1, 4, bytes(payload)))
 
 
+@pytest.mark.parametrize("present", [0, 1, 2, 3, 4])
+@pytest.mark.parametrize("signed", [False, True])
+def test_incomplete_numeric_fields_are_omitted_not_decoded_as_smaller_values(present, signed):
+    from copy import deepcopy
+
+    case = next(item for item in CASES if item["profile"] == "classic-6")
+    source = Frame.from_bytes(bytes.fromhex(case["wire"]))
+    decoder = Decoder("classic-6")
+    decoder._profiles = deepcopy(decoder._profiles)
+    offset, size, _signed = decoder._profiles["classic-6"]["numeric_fields"]["pvenergytotal"]
+    decoder._profiles["classic-6"]["numeric_fields"]["pvenergytotal"] = [offset, size, signed]
+    payload = bytearray(source.payload)
+    payload[offset : offset + size] = (10000).to_bytes(size, "big")
+    decoded = decoder.decode(Frame(1, 6, 1, 4, bytes(payload[: offset + present])))
+    if present < size:
+        assert "pvenergytotal" not in decoded.values
+        assert decoded.decode_errors > 0
+    else:
+        assert decoded.values["pvenergytotal"] == 10000
+
+
 def test_unknown_profile_is_rejected():
     with pytest.raises(ValueError, match="profile"):
         Decoder("unverified")

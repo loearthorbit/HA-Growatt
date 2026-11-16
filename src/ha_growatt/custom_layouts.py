@@ -106,7 +106,7 @@ class CustomLayout:
                         value = 0
                 else:
                     raw = data[field.offset : field.offset + field.size]
-                    if not raw or (field.kind == "numx" and len(raw) != field.size):
+                    if not raw or (field.kind in {"num", "numx"} and len(raw) != field.size):
                         raise ValueError("Missing field")
                     value = (
                         raw.decode("ascii")

@@ -88,10 +88,7 @@ class Decoder:
         for key, (offset, size, signed) in schema["numeric_fields"].items():
             if not self.include_all and key in schema["excluded_fields"]:
                 continue
-            if offset >= len(frame.payload):
-                errors += 1
-                continue
-            if signed and offset + size > len(frame.payload):
+            if offset + size > len(frame.payload):
                 errors += 1
                 continue
             values[key.strip()] = int.from_bytes(

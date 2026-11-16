@@ -116,6 +116,7 @@ class SupportServer:
             "capture_active": self.pipeline.capture.active,
             "private_capture_active": self.pipeline.private_capture.active,
             "packet_health": self.pipeline.packet_health.export(),
+            "energy_jump_rejections": self.pipeline.energy_guard.rejected,
             "output_failures": self.pipeline.failures,
             "dropped_readings": self.pipeline.dropped,
             "devices": devices,

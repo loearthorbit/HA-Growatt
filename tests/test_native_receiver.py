@@ -10,7 +10,9 @@ import pytest
 from jinja2 import Environment
 
 from ha_growatt.discovery import discovery_messages, sensor_value, sensors_for
+from ha_growatt.energy_guard import ENERGY_JUMP_LIMIT_KWH
 from ha_growatt.native_receiver import NativeReceiver
+from ha_growatt.profiles import wire_profiles
 from ha_growatt.protocol import Frame
 from ha_growatt.recovery import ReadingStore, Snapshot
 from ha_growatt.selection import FamilyDecoder, SelectionSettings
@@ -58,6 +60,18 @@ def test_native_receiver_restores_overnight_values_without_presenting_them_as_li
         ]
         await receiver.observe("cloud", source)
         assert len(restored) == 1
+        offset, size, _signed = wire_profiles()[telemetry.profile]["numeric_fields"][
+            "pvenergytotal"
+        ]
+        payload = bytearray(source.payload)
+        payload[offset : offset + size] = (
+            telemetry.values["pvenergytotal"] + ENERGY_JUMP_LIMIT_KWH * 10 + 1
+        ).to_bytes(size, "big")
+        await receiver.observe(
+            "device", Frame(1, source.protocol, source.unit, source.function, bytes(payload))
+        )
+        assert len(restored) == 1
+        assert receiver.energy_guard.rejected == 1
         await receiver.observe("device", source)
         assert len(restored) == 2
         assert restored[-1].restored is False
@@ -74,6 +88,41 @@ def test_native_receiver_restores_overnight_values_without_presenting_them_as_li
         assert len(restored) == 2
         await receiver.close()
         assert not receiver.running
+
+    asyncio.run(scenario())
+
+
+def test_energy_jump_does_not_reach_native_entities_outputs_or_saved_readings(tmp_path):
+    async def scenario():
+        outputs, live = [], []
+
+        async def output(telemetry):
+            outputs.append(telemetry)
+
+        receiver = NativeReceiver(state_path=str(tmp_path / "readings.json"), on_telemetry=output)
+        receiver.subscribe(live.append)
+        source = frame()
+        await receiver.observe("device", source)
+        good = receiver.snapshots["INVERT0001"]
+        saved = (tmp_path / "readings.json").read_bytes()
+        offset, size, _signed = wire_profiles()[good.telemetry.profile]["numeric_fields"][
+            "pvenergytotal"
+        ]
+        payload = bytearray(source.payload)
+        raw = good.telemetry.values["pvenergytotal"]
+        payload[offset : offset + size] = (raw + ENERGY_JUMP_LIMIT_KWH * 10 + 1).to_bytes(
+            size, "big"
+        )
+        bad = Frame(
+            source.transaction, source.protocol, source.unit, source.function, bytes(payload)
+        )
+        await receiver.observe("device", bad)
+        assert len(live) == len(outputs) == 1
+        assert receiver.snapshots["INVERT0001"] is good
+        assert (tmp_path / "readings.json").read_bytes() == saved
+        assert receiver.energy_guard.rejected == 1
+        await receiver.observe("device", source)
+        assert len(live) == len(outputs) == 2
 
     asyncio.run(scenario())
 

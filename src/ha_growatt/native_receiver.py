@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from .discovery import validate_identity
+from .energy_guard import EnergyGuard
 from .packet_health import PacketHealth, PrivateCapture
 from .protocol import Frame, ProtocolError
 from .recovery import MAX_DEVICES, ReadingStore, Snapshot
@@ -58,6 +59,7 @@ class NativeReceiver:
         self.decoder = FamilyDecoder(SelectionSettings(family=family))
         self.on_telemetry = on_telemetry
         self.packet_health = PacketHealth()
+        self.energy_guard = EnergyGuard()
         self.private_capture = PrivateCapture()
         self.unknown_formats = UnknownShineFormats() if unknown_diagnostics else None
         self.snapshots: dict[str, Snapshot] = {}
@@ -105,6 +107,8 @@ class NativeReceiver:
         if self._store is not None:
             try:
                 self.snapshots = await asyncio.to_thread(self._store.load)
+                for snapshot in self.snapshots.values():
+                    self.energy_guard.accept(snapshot.telemetry)
             except (OSError, ValueError, KeyError, TypeError):
                 self.cache_error = True
                 _LOG.warning("Saved native readings could not be restored")
@@ -145,6 +149,8 @@ class NativeReceiver:
         self.packet_health.observe(frame, telemetry)
         if self.unknown_formats is not None:
             self.unknown_formats.observe(frame, telemetry)
+        if not self.energy_guard.accept(telemetry):
+            return
         if self.on_telemetry is not None:
             try:
                 async with asyncio.timeout(0.5):

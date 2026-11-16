@@ -54,6 +54,9 @@ async def async_get_config_entry_diagnostics(hass, entry):
                 "failed_measurements": receiver.failed_measurements,
                 "incomplete_fields": receiver.incomplete_fields,
                 "buffered_records": receiver.buffered_records,
+                "energy_jump_rejections": getattr(
+                    getattr(receiver, "energy_guard", None), "rejected", 0
+                ),
             },
             "restart_recovery_available": not receiver.cache_error,
             "packet_health": receiver.packet_health.export(),

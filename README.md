@@ -329,6 +329,26 @@ Home Assistant use the same broker, the host port is published and the logger
 is sending to the right LAN address. If a solar-only feed is silent, check again
 in daylight before treating it as a fault.
 
+The Shine receiver discards a decoded reading from local outputs if any known
+energy counter changes by more than **25 kWh** from its last accepted value, in
+either direction. The whole reading is withheld, not just the energy field;
+the next reading is still compared with the last good values. Daily counters
+may reset downwards on a later packet date. Buffered uploads use a separate
+baseline, and Growatt cloud forwarding is unchanged. Logs and diagnostics
+report rejected readings without exposing packet bytes or energy values.
+
+The limit is defined once as `ENERGY_JUMP_LIMIT_KWH` at the top of
+[src/ha_growatt/energy_guard.py](src/ha_growatt/energy_guard.py). Change that
+constant to tune it for both receivers. This is a fixed limit, so a genuine
+increase of more than 25 kWh after a long outage is also withheld. Saved readings
+seed the live baseline where restart recovery is enabled; otherwise the first
+reading establishes it. The filter
+cannot establish whether that first value is correct, repair existing Home
+Assistant statistics, or prove a layout is correct. An inverter replacement or
+counter reset needs its readings and history checked. Incomplete numeric fields
+are omitted rather than decoded from only part of their bytes. Direct Modbus
+polling is separate from this Shine packet safeguard.
+
 When reporting a problem, include the app and companion versions, inverter and
 datalogger models, firmware if known, and redacted diagnostics. Describe what
 you expected and what happened. Keep credentials, real packet captures and raw

@@ -8,6 +8,7 @@ import logging
 from dataclasses import dataclass
 
 from .diagnostics import ObservationStats, SupportCapture
+from .energy_guard import EnergyGuard
 from .extensions import ExtensionProcess, layout_context
 from .outputs import InfluxOutput, PVOutput, RawPublisher, send_http
 from .packet_health import PacketHealth, PrivateCapture
@@ -43,10 +44,13 @@ class Pipeline:
         self.capture = SupportCapture()
         self.private_capture = PrivateCapture()
         self.packet_health = PacketHealth()
+        self.energy_guard = EnergyGuard()
         options = settings.runtime
         if options.home_assistant:
             ha = self.ha = ha_publisher(settings.mqtt)
             self._publishers.append(ha)
+            for snapshot in getattr(ha, "snapshots", {}).values():
+                self.energy_guard.accept(snapshot.telemetry)
 
             async def home_assistant(reading):
                 if not reading.telemetry.buffered:
@@ -207,6 +211,9 @@ class Pipeline:
             self.observations.incomplete_fields += telemetry.decode_errors
         if telemetry.buffered:
             self.observations.buffered_records += 1
+        if not self.energy_guard.accept(telemetry):
+            self.capture.record(frame, "energy_jump_rejected", telemetry)
+            return
         self.capture.record(frame, "decoded", telemetry)
         if self.features and not telemetry.buffered and frame.function in {4, 80}:
             self.features.remember(telemetry)
