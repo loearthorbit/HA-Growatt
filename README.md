@@ -44,7 +44,7 @@ not silently move their entities or history.
 ## Fork development app
 
 This fork packages **HA Growatt (energy guard development)**, version
-**0.9.1-dev.1**, with the 25 kWh safeguard and incomplete-field decoding fix.
+**0.9.1-dev.2**, with the 25 kWh safeguard and incomplete-field decoding fix.
 It is for the **app/add-on with MQTT** route, not the native HACS receiver.
 See [fork installation and rollback](docs/fork-installation.md) before switching
 an existing installation. The original upstream instructions below are retained

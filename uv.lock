@@ -27,7 +27,7 @@ wheels = [
 
 [[package]]
 name = "ha-growatt"
-version = "0.9.1.dev1"
+version = "0.9.1.dev2"
 source = { editable = "." }
 dependencies = [
     { name = "paho-mqtt" },

@@ -45,8 +45,6 @@ jobs:
             target: standalone
           - platform: linux/arm/v7
             target: standalone
-          - platform: linux/386
-            target: standalone
           - platform: linux/amd64
             target: addon
           - platform: linux/arm64

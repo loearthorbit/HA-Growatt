@@ -2,8 +2,8 @@
 
 ## Energy guard development build
 
-This is the fork's **0.9.1-dev.1** development app, containing receiver version
-**0.9.1.dev1**. It rejects decoded readings when a known energy counter jumps
+This is the fork's **0.9.1-dev.2** development app, containing receiver version
+**0.9.1.dev2**. It rejects decoded readings when a known energy counter jumps
 by more than 25 kWh in either direction and omits incomplete numeric fields.
 Daily resets on a later packet date and buffered records are handled separately.
 Cloud forwarding and MQTT identifiers remain unchanged; existing bad statistics

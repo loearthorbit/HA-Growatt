@@ -1,3 +1,11 @@
+# 0.9.1-dev.2
+
+The development build checks amd64 and arm64 app images without requiring an
+unused 32-bit x86 standalone target. The receiver changes are unchanged from
+dev.1. The dev.1 image was not published because its 32-bit x86 container probe
+failed while creating an asyncio socket pair. Existing development tags are
+retained rather than rewritten.
+
 # 0.9.1-dev.1
 
 Development build from the loearthorbit fork, not a hardware-qualified release.

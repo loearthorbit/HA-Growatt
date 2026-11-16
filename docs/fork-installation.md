@@ -1,8 +1,8 @@
 # Install the energy guard development app
 
 This fork provides **HA Growatt (energy guard development)** for the Home
-Assistant App Store. Version **0.9.1-dev.1** contains receiver package
-**0.9.1.dev1**, including the energy filter and incomplete-field decoding fix.
+Assistant App Store. Version **0.9.1-dev.2** contains receiver package
+**0.9.1.dev2**, including the energy filter and incomplete-field decoding fix.
 It is a development build, not a hardware-qualified release. Images cover
 **amd64** and **aarch64**.
 
@@ -39,7 +39,7 @@ first accepted energy reading establishes the comparison value.
 
 3. Refresh the store and find **HA Growatt (energy guard development)** under
    **HA Growatt energy guard development builds**. Check that its version is
-   **0.9.1-dev.1**, then install it. Do not start it yet.
+   **0.9.1-dev.2**, then install it. Do not start it yet.
 4. Copy the existing app's effective options and host port mapping. Preserve
    the broker, discovery profile, inverter profiles and timestamp options.
    Leave datalogger destination settings unchanged if the new app will use
@@ -47,7 +47,7 @@ first accepted energy reading establishes the comparison value.
 5. Disable automatic startup and the watchdog for the original app, then stop
    it. Only one receiver can own the datalogger port, normally **5279**.
 6. Start the development app and open its web UI. Check that its receiver
-   version is **0.9.1.dev1**, the MQTT broker connects and every inverter
+   version is **0.9.1.dev2**, the MQTT broker connects and every inverter
    produces fresh readings. If an optional companion still points at the old
    app, update its app connection.
 
@@ -88,16 +88,17 @@ Supervisor's protected options; the application then drops privileges. The
 default `standalone` target retains the unprivileged Docker entry point.
 
 The **Development app image** workflow runs the README checks on Python 3.12,
-3.13 and 3.14, plus installed-container probes on amd64, arm64, arm/v7 and 386.
+3.13 and 3.14, plus installed-container probes on amd64, arm64 and arm/v7.
+This fork does not build or qualify 32-bit x86 images.
 The app targets also check Supervisor options and the privilege drop on amd64
-and arm64. A development tag, for example `v0.9.1-dev.1`, publishes the app image
+and arm64. A development tag, for example `v0.9.1-dev.2`, publishes the app image
 only after those checks pass. The tag must match the app configuration version.
 Manual workflow runs on a branch check the build without publishing it.
 
 Images are published to:
 
 ```text
-ghcr.io/loearthorbit/ha-growatt:0.9.1-dev.1
+ghcr.io/loearthorbit/ha-growatt:0.9.1-dev.2
 ```
 
 GitHub may initially make a new container package private, even when its source

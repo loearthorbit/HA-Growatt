@@ -41,8 +41,9 @@ def test_publication_waits_for_python_and_container_checks():
     workflow = (ROOT / ".github/workflows/development-image.yml").read_text()
     assert 'tags: ["v*-dev.*"]' in workflow
     assert 'python: ["3.12", "3.13", "3.14"]' in workflow
-    for platform in ("linux/amd64", "linux/arm64", "linux/arm/v7", "linux/386"):
+    for platform in ("linux/amd64", "linux/arm64", "linux/arm/v7"):
         assert f"platform: {platform}" in workflow
+    assert "platform: linux/386" not in workflow
     assert "needs: [python, containers]" in workflow
     assert "github.repository == 'loearthorbit/HA-Growatt'" in workflow
     assert "container_probe.py --supervisor" in workflow
