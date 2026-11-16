@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ha-growatt"
-version = "0.9.0"
+version = "0.9.1.dev1"
 description = "Local Growatt telemetry for Home Assistant"
 requires-python = ">=3.12"
 readme = "README.md"
@@ -19,8 +19,8 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/Herbertmt978/HA-Growatt"
-Issues = "https://github.com/Herbertmt978/HA-Growatt/issues"
+Repository = "https://github.com/loearthorbit/HA-Growatt"
+Issues = "https://github.com/loearthorbit/HA-Growatt/issues"
 
 [dependency-groups]
 dev = [

@@ -1,5 +1,23 @@
 # Using the app
 
+## Energy guard development build
+
+This is the fork's **0.9.1-dev.1** development app, containing receiver version
+**0.9.1.dev1**. It rejects decoded readings when a known energy counter jumps
+by more than 25 kWh in either direction and omits incomplete numeric fields.
+Daily resets on a later packet date and buffered records are handled separately.
+Cloud forwarding and MQTT identifiers remain unchanged; existing bad statistics
+are not repaired automatically.
+
+Back up the original app and copy its options and port mapping before switching.
+Stop the original receiver before starting this one, and keep it available for
+rollback. The fork's app has separate protected options and a separate restart
+cache. Confirm fresh readings from every inverter, existing entity history,
+cloud forwarding, app restart and MQTT reconnection before keeping this build.
+See the [fork installation guide](https://github.com/loearthorbit/HA-Growatt/blob/main/docs/fork-installation.md)
+for the full procedure and limits. This is not a hardware-qualified release.
+
+
 Version 0.5.0 adds clock, operating-state, main-fault and setting-change
 sensors. The support page explains packet-format changes and offers a separate
 private replay capture when redacted summaries are insufficient. See the

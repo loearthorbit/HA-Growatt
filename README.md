@@ -41,6 +41,16 @@ not silently move their entities or history.
 > the matching 0.9.0 integration and receiver wheel. Existing app installations
 > can update without changing their setup.
 
+## Fork development app
+
+This fork packages **HA Growatt (energy guard development)**, version
+**0.9.1-dev.1**, with the 25 kWh safeguard and incomplete-field decoding fix.
+It is for the **app/add-on with MQTT** route, not the native HACS receiver.
+See [fork installation and rollback](docs/fork-installation.md) before switching
+an existing installation. The original upstream instructions below are retained
+for reference; their repository links install the original project's packages.
+This development build still needs live installation and compatibility checks.
+
 ## Quick start
 
 ### Requirements

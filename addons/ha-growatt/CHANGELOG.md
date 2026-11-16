@@ -1,3 +1,18 @@
+# 0.9.1-dev.1
+
+Development build from the loearthorbit fork, not a hardware-qualified release.
+
+Decoded readings are withheld from local outputs when a known energy counter
+changes by more than 25 kWh in either direction. The last accepted value remains
+the baseline. Daily counters can reset on a later packet date; buffered uploads
+have a separate baseline. Incomplete numeric fields are omitted rather than
+read from partial bytes. MQTT identifiers and cloud forwarding are unchanged.
+
+The app uses the fork's multi-architecture image, built from its receiver source.
+Back up the existing installation and check fresh readings, forwarding and
+Home Assistant history before keeping this build in service. Existing bad
+statistics are not repaired automatically.
+
 # 0.9.0
 
 The shareable packet report now points to changing two-byte positions in

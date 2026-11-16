@@ -1,8 +1,9 @@
-name: HA Growatt
-version: 0.9.0
+name: HA Growatt (energy guard development)
+version: 0.9.1-dev.1
+image: ghcr.io/loearthorbit/ha-growatt
 slug: ha_growatt
 description: Growatt readings through MQTT with Home Assistant discovery
-url: https://github.com/Herbertmt978/HA-Growatt
+url: https://github.com/loearthorbit/HA-Growatt
 arch: [amd64, aarch64]
 startup: services
 boot: auto

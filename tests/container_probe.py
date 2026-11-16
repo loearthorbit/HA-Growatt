@@ -10,6 +10,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from ha_growatt.energy_guard import ENERGY_JUMP_LIMIT_KWH, EnergyGuard
 from ha_growatt.health import healthy
 from ha_growatt.protocol import Frame, read_frame
 from ha_growatt.relay import RelaySettings
@@ -230,6 +231,29 @@ async def supervisor_application():
                 await process.wait()
 
 
+def installed_energy_guard():
+    cases = json.loads((Path(__file__).parent / "fixtures/telemetry_cases.json").read_text())
+    case = next(item for item in cases if item["profile"] == "classic-6")
+    source = Frame.from_bytes(bytes.fromhex(case["wire"]))
+    decoder = Decoder("classic-6")
+    good = decoder.decode(source)
+    guard = EnergyGuard()
+    assert guard.accept(good)
+    from ha_growatt.profiles import wire_profiles
+
+    offset, size, _signed = wire_profiles()["classic-6"]["numeric_fields"]["pvenergytotal"]
+    payload = bytearray(source.payload)
+    payload[offset : offset + size] = (
+        good.values["pvenergytotal"] + ENERGY_JUMP_LIMIT_KWH * 10 + 1
+    ).to_bytes(size, "big")
+    bad = Frame(1, 6, 1, 4, bytes(payload))
+    assert not guard.accept(decoder.decode(bad))
+    assert guard.accept(good)
+    incomplete = decoder.decode(Frame(1, 6, 1, 4, bytes(payload[: offset + size - 1])))
+    assert "pvenergytotal" not in incomplete.values
+    assert incomplete.decode_errors > 0
+
+
 def installed_profiles():
     total = 0
     for filename in ("telemetry_cases.json", "extra_telemetry_cases.json", "csv_meter_cases.json"):
@@ -257,6 +281,7 @@ if __name__ == "__main__":
     else:
         assert os.getuid() == 10001
         profiles = installed_profiles()
+        installed_energy_guard()
         for mode in ("proxy", "server"):
             asyncio.run(service(mode))
         asyncio.run(application())
@@ -264,6 +289,7 @@ if __name__ == "__main__":
             json.dumps(
                 {
                     "installed_packets": profiles,
+                    "energy_guard": "passed",
                     "proxy": "passed",
                     "server": "passed",
                     "signal_shutdown": "passed",

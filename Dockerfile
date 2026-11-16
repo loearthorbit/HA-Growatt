@@ -9,11 +9,11 @@ COPY src ./src
 RUN python -m pip wheel --no-cache-dir --no-build-isolation --no-deps --wheel-dir /wheels .
 
 FROM ${PYTHON_IMAGE} AS runtime
-ARG VERSION=0.9.0
+ARG VERSION=0.9.1-dev.1
 ARG REVISION=development
 LABEL org.opencontainers.image.title="HA Growatt" \
       org.opencontainers.image.description="Growatt telemetry and local device services" \
-      org.opencontainers.image.source="https://github.com/Herbertmt978/HA-Growatt" \
+      org.opencontainers.image.source="https://github.com/loearthorbit/HA-Growatt" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${REVISION}" \
@@ -35,3 +35,11 @@ EXPOSE 5279/tcp 5781/tcp 5782/tcp
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD ["python", "-m", "ha_growatt", "healthcheck"]
 ENTRYPOINT ["python", "-m", "ha_growatt"]
 CMD ["container"]
+
+# Supervisor options are root-owned; the app drops privileges before listening.
+FROM runtime AS addon
+USER 0:0
+CMD ["app"]
+
+# Keep an ordinary Docker build read-only and unprivileged by default.
+FROM runtime AS standalone
